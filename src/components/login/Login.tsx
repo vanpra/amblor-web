@@ -2,7 +2,6 @@ import {
   Button,
   ButtonBase,
   Card,
-  CircularProgress,
   Paper,
   Snackbar,
   TextField,
@@ -14,8 +13,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ReactComponent as GoogleLogo } from "../../assets/google_logo.svg";
 import { ReactComponent as AmblorLogo } from "../../assets/logo.svg";
-import "../../firebase";
-import { googleSignIn, passwordSignIn } from "../../firebase";
+import "../../util/firebase";
+import { googleSignIn, passwordSignIn } from "../../util/firebase";
 import "./Login.css";
 
 interface SnackbarState {
@@ -31,7 +30,6 @@ export default function LoginPage(): JSX.Element {
     return { isOpen: false, message: "" };
   }, []);
   const [snakbarState, setSnakbarState] = useState<SnackbarState>(emptySnakbar);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -40,60 +38,39 @@ export default function LoginPage(): JSX.Element {
       redirectUrl: params.get("redirect_uri"),
     };
 
-    console.log(resposeState);
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user && resposeState.tokenResponse) {
-        const redirectWithToken =
-          (resposeState.redirectUrl ?? "") +
-          "?refresh_token=" +
-          user.refreshToken;
-        window.location.assign(redirectWithToken);
-      } else if (user && !resposeState.tokenResponse) {
-        navigate("/home");
-      }
-      setIsLoading(false);
-    });
-
     firebase
       .auth()
       .getRedirectResult()
       .then((result) => {
         console.log(result.operationType);
-        if (
-          result.operationType == "signIn" ||
-          result.operationType == "reauthenticate"
-        ) {
+        if (result.user && resposeState.tokenResponse) {
+          const redirectWithToken =
+            (resposeState.redirectUrl ?? "") +
+            "?refresh_token=" +
+            result.user.refreshToken;
+          window.location.assign(redirectWithToken);
+        } else if (result.user && !resposeState.tokenResponse) {
           navigate("/home");
         }
-        setIsLoading(false);
       })
       .catch((error) => {
         setSnakbarState({ isOpen: true, message: error.toString() });
-        setIsLoading(false);
       });
   }, [location.search, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="root">
-        <CircularProgress color="primary" />
-      </div>
-    );
-  } else {
-    return (
-      <div className="root">
-        <LoginCard
-          onGoogleSignIn={googleSignIn}
-          onPasswordSignIn={passwordSignIn}
-        />
-        <Snackbar
-          open={snakbarState.isOpen}
-          message={snakbarState.message}
-          onClose={() => setSnakbarState(emptySnakbar)}
-        />
-      </div>
-    );
-  }
+  return (
+    <div className="root">
+      <LoginCard
+        onGoogleSignIn={googleSignIn}
+        onPasswordSignIn={passwordSignIn}
+      />
+      <Snackbar
+        open={snakbarState.isOpen}
+        message={snakbarState.message}
+        onClose={() => setSnakbarState(emptySnakbar)}
+      />
+    </div>
+  );
 }
 
 function LoginCard(props: {

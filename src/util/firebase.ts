@@ -1,11 +1,7 @@
 import firebase from "firebase";
-import { secrets } from "./util/Secrets";
+import { Secrets } from "../constants/Secrets";
 
-export const firebaseConfig = {
-  apiKey: secrets.firebase_api_key,
-};
-
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(Secrets.firebaseConfig);
 firebase.analytics();
 
 export const googleSignIn = async (): Promise<void> => {
